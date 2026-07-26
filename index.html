@@ -4,7 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>LINEアニメ絵文字 APNGジェネレーター (ZIP対応)</title>
+    <!-- タブ用アイコン（スマイル＋再生ボタン） -->
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><circle cx=%2250%22 cy=%2250%22 r=%2245%22 fill=%22%2306C755%22/><circle cx=%2235%22 cy=%2240%22 r=%228%22 fill=%22%23fff%22/><circle cx=%2265%22 cy=%2240%22 r=%228%22 fill=%22%23fff%22/><path d=%22M 35 60 Q 50 75 65 60%22 stroke=%22%23fff%22 stroke-width=%228%22 stroke-linecap=%22round%22 fill=%22none%22/><polygon points=%2265,65 65,95 95,80%22 fill=%22%23FFD700%22 stroke=%22%23fff%22 stroke-width=%224%22 stroke-linejoin=%22round%22/></svg>">
+    
     <script src="https://cdn.jsdelivr.net/npm/pako@1.0.11/dist/pako.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/upng-js@2.1.0/UPNG.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
@@ -36,70 +38,41 @@
         .first-frame-alert p { margin: 0; font-size: 12px; color: #856404; font-weight: bold; }
         .first-frame-alert p span { display: block; font-size: 11px; font-weight: normal; margin-top: 4px; }
 
-        .frame-list { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 15px; }
+        .frame-list { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 15px; }
         .frame-item { position: relative; width: 60px; height: 60px; border: 1px solid #ddd; border-radius: 4px; background: #fff; cursor: grab; display: flex; align-items: center; justify-content: center; }
         .frame-item img { max-width: 100%; max-height: 100%; object-fit: contain; }
         .frame-item .frame-num { position: absolute; top: -6px; left: -6px; background: #333; color: #fff; font-size: 10px; border-radius: 50%; width: 18px; height: 18px; display: flex; align-items: center; justify-content: center; z-index: 2; }
-        .frame-item .frame-del { position: absolute; top: -6px; right: -6px; background: #ff4d4f; color: white; border: none; border-radius: 50%; width: 18px; height: 18px; font-size: 12px; line-height: 1; cursor: pointer; padding: 0; z-index: 2; display: flex; align-items: center; justify-content: center; margin:0; }
+        
+        /* 削除・複製ボタン */
+        .frame-item .frame-del { position: absolute; top: -6px; right: -6px; background: #ff4d4f; color: white; border: none; border-radius: 50%; width: 20px; height: 20px; font-size: 12px; line-height: 1; cursor: pointer; padding: 0; z-index: 2; display: flex; align-items: center; justify-content: center; margin:0; box-shadow: 0 1px 3px rgba(0,0,0,0.2); }
+        .frame-item .frame-copy { position: absolute; bottom: -6px; right: -6px; background: #1890ff; color: white; border: none; border-radius: 50%; width: 20px; height: 20px; font-size: 14px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; margin: 0; padding: 0; z-index: 2; box-shadow: 0 1px 3px rgba(0,0,0,0.2); }
+
         .sortable-ghost { opacity: 0.4; }
 
         .preview-box { background: #e6f7ff; border: 1px solid #91d5ff; border-radius: 8px; padding: 15px; text-align: center; margin-bottom: 15px; display: none; }
         .preview-box h4 { margin: 0 0 10px; color: #0050b3; font-size: 14px; }
-        .preview-box img { max-width: 100px; height: auto; border: 1px solid #ccc; background: #fff; }
+        
+        /* ====== 変更：プレビューを180x180の正方形（本番と同じ伸縮）に固定 ====== */
+        .preview-box img { 
+            width: 180px; 
+            height: 180px; 
+            object-fit: fill; 
+            border: 1px solid #ccc; 
+            background: #fff; 
+        }
+        
         .preview-box p { margin: 10px 0 0; font-size: 12px; color: #666; }
 
         h2, h3 { margin-top: 0; border-bottom: 2px solid #eee; padding-bottom: 10px; font-size: 18px;}
         .list-area { background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); width: 100%; margin-top: 20px; box-sizing: border-box; }
         
-        /* ====== 追加・修正：売り場風グリッドレイアウト ====== */
-        .emoji-grid-container {
-            background: #ebebeb;
-            padding: 15px;
-            border-radius: 8px;
-            margin-top: 15px;
-            min-height: 120px;
-        }
-        .emoji-grid {
-            display: grid;
-            grid-template-columns: repeat(8, 1fr); /* 横に8個均等配置 */
-            gap: 10px; 
-            width: 100%;
-        }
-        .emoji-item { 
-            position: relative;
-            background: #fff;
-            border-radius: 6px; 
-            padding: 8px 5px; 
-            text-align: center; 
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-            cursor: grab; /* ドラッグ可能を示す */
-            aspect-ratio: 1 / 1.1; /* やや縦長の四角形を維持 */
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-        }
+        .emoji-grid-container { background: #ebebeb; padding: 15px; border-radius: 8px; margin-top: 15px; min-height: 120px; }
+        .emoji-grid { display: grid; grid-template-columns: repeat(8, 1fr); gap: 10px; width: 100%; }
+        .emoji-item { position: relative; background: #fff; border-radius: 6px; padding: 8px 5px; text-align: center; box-shadow: 0 1px 3px rgba(0,0,0,0.1); cursor: grab; aspect-ratio: 1 / 1.1; display: flex; flex-direction: column; align-items: center; justify-content: center; }
         .emoji-item:active { cursor: grabbing; }
         .emoji-item img { max-width: 90%; max-height: 60%; display: block; margin: 0 auto; object-fit: contain; }
         .emoji-item .filename { font-size: 10px; font-weight: bold; color: #666; margin-bottom: 5px; }
-        .emoji-item .btn-delete { 
-            position: absolute; 
-            top: -6px; 
-            right: -6px; 
-            background: #ff4d4f; 
-            color: white; 
-            border: none; 
-            border-radius: 50%; 
-            width: 20px; 
-            height: 20px; 
-            font-size: 12px; 
-            cursor: pointer; 
-            display: flex; 
-            align-items: center; 
-            justify-content: center; 
-            margin: 0; padding: 0;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-        }
+        .emoji-item .btn-delete { position: absolute; top: -6px; right: -6px; background: #ff4d4f; color: white; border: none; border-radius: 50%; width: 20px; height: 20px; font-size: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center; margin: 0; padding: 0; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
 
         .tab-preview { margin-top: 10px; text-align: center; }
         .tab-preview img { border: 1px solid #ccc; max-width: 96px; background: #eee; }
@@ -115,7 +88,8 @@
             <h3>🎨 1. アニメ絵文字を作る</h3>
             <div id="dropZone" class="drop-zone">
                 📁 ここに画像をドラッグ＆ドロップ (5〜20枚)<br>
-                <span style="font-size:12px; color:#666;">またはクリックしてファイルを選択</span>
+                <span style="font-size:12px; color:#666;">またはクリックしてファイルを選択</span><br>
+                <span style="font-size:12px; color:#06C755;">※出力時に180×180pxに自動リサイズされます</span>
                 <input type="file" id="fileInput" multiple accept="image/png" style="display:none;">
             </div>
             <div id="frameValidationMsg" class="msg"></div>
@@ -147,16 +121,17 @@
                         <option value="1">1回</option>
                         <option value="2">2回</option>
                         <option value="3">3回</option>
-                        <option value="4">4回</option>
+                        <!-- ====== 変更：初期値を4回に設定 ====== -->
+                        <option value="4" selected>4回</option>
                     </select>
                 </div>
             </div>
 
             <div id="livePreviewBox" class="preview-box">
-                <h4>👀 動きのプレビュー</h4>
+                <h4>👀 動きのプレビュー (180×180px)</h4>
                 <img id="livePreviewImg" src="">
                 <p id="livePreviewInfo"></p>
-                <p style="font-size:11px; color:#999; margin-top:2px;">※動作確認のため、プレビューは無限ループで再生されます。</p>
+                <p style="font-size:11px; color:#999; margin-top:2px;">※実際の出力サイズでプレビューしています。<br>縦長・横長の画像はここで表示される通りにリサイズされます。</p>
             </div>
             
             <button id="addBtn" class="btn-add" disabled>＋ 動きを確認してリストに追加</button>
@@ -182,7 +157,7 @@
     <div class="list-area">
         <h3>📦 3. 作成済み一覧 ＆ ダウンロード (<span id="countDisplay">0</span>/40個)</h3>
         <p style="font-size:12px; color:#666; margin-top: -5px; margin-bottom: 10px;">
-            ※追加した絵文字はドラッグ＆ドロップで順番を入れ替えられます（ファイル名も自動で振り直されます）。横8個×縦5個のレイアウトで確認できます。
+            ※追加した絵文字はドラッグ＆ドロップで順番を入れ替えられます（ファイル名も自動で振り直されます）。
         </p>
         
         <div class="emoji-grid-container">
@@ -216,7 +191,6 @@
     const livePreviewImg = document.getElementById('livePreviewImg');
     const livePreviewInfo = document.getElementById('livePreviewInfo');
 
-    // ① フレーム作成側の並び替え
     new Sortable(frameList, {
         animation: 150,
         ghostClass: 'sortable-ghost',
@@ -227,16 +201,13 @@
         }
     });
 
-    // ② 【追加】作成済みリスト（全体グリッド）の並び替え
     const emojiGrid = document.getElementById('emojiGrid');
     new Sortable(emojiGrid, {
         animation: 150,
         ghostClass: 'sortable-ghost',
         onEnd: (evt) => {
-            // 要素が移動したら、内部のデータ配列 (apngList) も同じように入れ替える
             const movedItem = apngList.splice(evt.oldIndex, 1)[0];
             apngList.splice(evt.newIndex, 0, movedItem);
-            // 並び替えた結果を反映（ファイル名の再割り当てと描画）
             renderGrid();
         }
     });
@@ -265,7 +236,12 @@
         currentFrames.forEach((item, index) => {
             const div = document.createElement('div');
             div.className = 'frame-item'; div.dataset.id = item.id;
-            div.innerHTML = `<span class="frame-num">${index + 1}</span><img src="${item.url}" draggable="false"><button class="frame-del" onclick="removeFrame('${item.id}')" title="削除">×</button>`;
+            div.innerHTML = `
+                <span class="frame-num">${index + 1}</span>
+                <img src="${item.url}" draggable="false">
+                <button class="frame-del" onclick="removeFrame('${item.id}')" title="削除">×</button>
+                <button class="frame-copy" onclick="copyFrame('${item.id}')" title="このコマを複製">＋</button>
+            `;
             frameList.appendChild(div);
         });
 
@@ -306,6 +282,20 @@
         }
     }
 
+    window.copyFrame = (id) => {
+        const index = currentFrames.findIndex(f => f.id === id);
+        if (index > -1) {
+            const original = currentFrames[index];
+            const newFrame = { 
+                id: 'frame_' + Math.random().toString(36).substr(2, 9), 
+                file: original.file, 
+                url: URL.createObjectURL(original.file) 
+            };
+            currentFrames.splice(index + 1, 0, newFrame);
+            updateFrameUI();
+        }
+    };
+
     window.removeFrame = (id) => {
         const index = currentFrames.findIndex(f => f.id === id);
         if (index > -1) { URL.revokeObjectURL(currentFrames[index].url); currentFrames.splice(index, 1); updateFrameUI(); }
@@ -324,9 +314,20 @@
                 const img = new Image(); img.onload = () => resolve(img); img.onerror = () => reject(new Error('失敗')); img.src = URL.createObjectURL(file);
             });
             const images = await Promise.all(filesToProcess.map(loadImg));
-            const w = images[0].width; const h = images[0].height;
-            const canvas = document.createElement('canvas'); canvas.width = w; canvas.height = h; const ctx = canvas.getContext('2d');
-            const framesRgba = images.map(img => { ctx.clearRect(0, 0, w, h); ctx.drawImage(img, 0, 0, w, h); return ctx.getImageData(0, 0, w, h).data.buffer; });
+            
+            const w = 180; 
+            const h = 180;
+            const canvas = document.createElement('canvas'); 
+            canvas.width = w; 
+            canvas.height = h; 
+            const ctx = canvas.getContext('2d');
+            
+            const framesRgba = images.map(img => { 
+                ctx.clearRect(0, 0, w, h); 
+                ctx.drawImage(img, 0, 0, w, h); 
+                return ctx.getImageData(0, 0, w, h).data.buffer; 
+            });
+            
             const delayMs = (loopTime * 1000) / framesRgba.length;
             const delays = Array(framesRgba.length).fill(delayMs);
             let apngBuffer = UPNG.encode(framesRgba, w, h, 0, delays);
@@ -343,19 +344,15 @@
         } catch (error) { addMsg.className = 'msg error'; addMsg.textContent = '❌ エラーが発生しました'; addBtn.disabled = false; }
     });
 
-    // ==========================================
-    // リストの描画（売り場風グリッドの更新）
-    // ==========================================
     function renderGrid() {
         const countDisplay = document.getElementById('countDisplay');
         countDisplay.textContent = apngList.length;
-        emojiGrid.innerHTML = ''; // 一旦クリア
+        emojiGrid.innerHTML = ''; 
 
         if (apngList.length === 0) {
             emojiGrid.innerHTML = '<p id="emptyMsg" style="grid-column: 1 / -1; color:#999; text-align:center; font-size:14px; margin-top:40px;">まだ追加されていません。</p>';
         } else {
             apngList.forEach((item, index) => {
-                // 並んでいる順番に合わせてファイル名を 001.png から再割り当て
                 const fileName = String(index + 1).padStart(3, '0') + '.png';
                 const div = document.createElement('div');
                 div.className = 'emoji-item';
@@ -374,7 +371,6 @@
         URL.revokeObjectURL(apngList[index].previewUrl); apngList.splice(index, 1); renderGrid();
     }
 
-    // --- タブ画像・ZIP処理・バイナリ処理（変更なし） ---
     const tabInput = document.getElementById('tabInput');
     const tabMsg = document.getElementById('tabMsg');
     const tabPreviewArea = document.getElementById('tabPreviewArea');
