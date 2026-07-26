@@ -30,7 +30,8 @@
         .error { color: #d32f2f; }
         .success { color: #388e3c; }
 
-        .drop-zone { border: 2px dashed #ccc; border-radius: 8px; padding: 30px 10px; text-align: center; background-color: #fafafa; cursor: pointer; transition: background 0.2s; margin-bottom: 10px; }
+        /* labelに変更したドロップゾーン（スマホ対応） */
+        .drop-zone { display: block; border: 2px dashed #ccc; border-radius: 8px; padding: 30px 10px; text-align: center; background-color: #fafafa; cursor: pointer; transition: background 0.2s; margin-bottom: 10px; }
         .drop-zone:hover, .drop-zone.dragover { background-color: #e6f7ff; border-color: #1890ff; }
         
         .first-frame-alert { background: #fff3cd; border-left: 4px solid #ffc107; padding: 10px 15px; border-radius: 4px; margin-bottom: 15px; display: none; align-items: center; gap: 15px; }
@@ -58,7 +59,7 @@
         
         .emoji-grid-container { background: #ebebeb; padding: 15px; border-radius: 8px; margin-top: 15px; min-height: 120px; }
         
-        /* ====== 変更：横8×縦5の売り場グリッド（元のレイアウト）に戻す ====== */
+        /* 売り場グリッド（横8×縦5） */
         .emoji-grid { display: grid; grid-template-columns: repeat(8, 1fr); gap: 10px; width: 100%; }
         .emoji-item { position: relative; background: #fff; border-radius: 6px; padding: 8px 5px; text-align: center; box-shadow: 0 1px 3px rgba(0,0,0,0.1); cursor: grab; aspect-ratio: 1 / 1.1; display: flex; flex-direction: column; align-items: center; justify-content: center; }
         .emoji-item:active { cursor: grabbing; }
@@ -68,6 +69,12 @@
 
         .tab-preview { margin-top: 10px; text-align: center; }
         .tab-preview img { border: 1px solid #ccc; max-width: 96px; background: #eee; }
+
+        /* スマホ向けのレスポンス調整（横8列が潰れないようにスクロールまたは縮小） */
+        @media (max-width: 768px) {
+            .emoji-grid { min-width: 500px; }
+            .emoji-grid-container { overflow-x: auto; }
+        }
     </style>
 </head>
 <body>
@@ -78,12 +85,13 @@
         <!-- 左パネル：絵文字の作成と追加 -->
         <div class="panel" style="flex: 1.5;">
             <h3>🎨 1. アニメ絵文字を作る</h3>
-            <div id="dropZone" class="drop-zone">
+            <!-- labelタグにすることでスマホでも確実にファイル選択が反応するように変更 -->
+            <label for="fileInput" id="dropZone" class="drop-zone">
                 📁 ここに画像をドラッグ＆ドロップ (5〜20枚)<br>
-                <span style="font-size:12px; color:#666;">またはクリックしてファイルを選択</span><br>
+                <span style="font-size:12px; color:#666;">またはタップしてファイルを選択</span><br>
                 <span style="font-size:12px; color:#06C755;">※出力時に180×180pxに自動リサイズされます</span>
-                <input type="file" id="fileInput" multiple accept="image/png" style="display:none;">
-            </div>
+                <input type="file" id="fileInput" multiple accept="image/*" style="display:none;">
+            </label>
             <div id="frameValidationMsg" class="msg"></div>
 
             <div id="firstFrameAlert" class="first-frame-alert">
@@ -134,7 +142,7 @@
             <h3>📑 2. タブ画像 (tab.png) の設定</h3>
             <p style="font-size:12px; color:#666;">※96×74pxの静止PNG画像が必要です。</p>
             <div class="form-group">
-                <input type="file" id="tabInput" accept="image/png">
+                <input type="file" id="tabInput" accept="image/png,image/jpeg">
             </div>
             <div id="tabMsg" class="msg"></div>
             <div class="tab-preview" id="tabPreviewArea" style="display:none;">
@@ -148,7 +156,6 @@
     <div class="list-area">
         <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #eee; padding-bottom: 10px; margin-bottom: 10px;">
             <h3 style="margin: 0; border: none; padding: 0;">📦 3. 作成済み一覧 ＆ ダウンロード (<span id="countDisplay">0</span>/40個)</h3>
-            <!-- ====== 追加：一覧の表示切り替えボタン ====== -->
             <button id="toggleViewBtn" style="margin-top: 0; padding: 6px 14px; font-size: 12px; background-color: #1890ff; color: white; width: auto;">👁️ 表示: アニメーション中</button>
         </div>
         
@@ -171,7 +178,7 @@
     const apngList = []; 
     let tabImageBlob = null;
     let currentFrames = [];
-    let isAnimationView = true; // true: アニメーション表示, false: 静止画表示
+    let isAnimationView = true;
 
     const dropZone = document.getElementById('dropZone');
     const fileInput = document.getElementById('fileInput');
@@ -182,7 +189,6 @@
     const addBtn = document.getElementById('addBtn');
     const toggleViewBtn = document.getElementById('toggleViewBtn');
     
-    // --- プレビュー用変数 ---
     let previewInterval = null;
     let currentPreviewIndex = 0;
     const livePreviewBox = document.getElementById('livePreviewBox');
@@ -210,7 +216,6 @@
         }
     });
 
-    // ====== 追加：一覧の表示切替ボタンの動作 ======
     toggleViewBtn.addEventListener('click', () => {
         isAnimationView = !isAnimationView;
         if (isAnimationView) {
@@ -223,14 +228,16 @@
         renderGrid();
     });
 
-    dropZone.addEventListener('click', () => fileInput.click());
+    // ドラッグ＆ドロップ用イベント（PC用）
     dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('dragover'); });
     dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
     dropZone.addEventListener('drop', (e) => { e.preventDefault(); dropZone.classList.remove('dragover'); handleFiles(e.dataTransfer.files); });
+    
+    // ファイル選択時
     fileInput.addEventListener('change', (e) => handleFiles(e.target.files));
 
     function handleFiles(files) {
-        const newFiles = Array.from(files).filter(f => f.type === 'image/png');
+        const newFiles = Array.from(files).filter(f => f.type.startsWith('image/'));
         if (newFiles.length === 0) return;
         newFiles.forEach(file => {
             currentFrames.push({ id: 'frame_' + Math.random().toString(36).substr(2, 9), file: file, url: URL.createObjectURL(file) });
@@ -348,13 +355,11 @@
             
             let baseApngBuffer = UPNG.encode(framesRgba, w, h, 0, delays);
             
-            // 1. プレビュー用（無限ループ=0に設定）
             let previewBuffer = baseApngBuffer.slice(0);
             previewBuffer = setApngLoopCount(previewBuffer, 0);
             const previewBlob = new Blob([previewBuffer], { type: 'image/png' });
             const previewUrl = URL.createObjectURL(previewBlob);
 
-            // 2. ダウンロード用（指定ループ回数を設定）
             let downloadBuffer = baseApngBuffer.slice(0);
             downloadBuffer = setApngLoopCount(downloadBuffer, loopCount);
             const downloadBlob = new Blob([downloadBuffer], { type: 'image/png' });
@@ -386,7 +391,6 @@
                 const div = document.createElement('div');
                 div.className = 'emoji-item';
                 
-                // 現在の表示モードに応じてアニメーション画像か静止画かを切り替え
                 const displaySrc = isAnimationView ? item.previewUrl : item.staticUrl;
 
                 div.innerHTML = `
