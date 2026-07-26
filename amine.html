@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LINEアニメ絵文字 APNGジェネレーター (ZIP対応)</title>
+    <script src="https://cdn.jsdelivr.net/npm/pako@1.0.11/dist/pako.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/upng-js@2.1.0/UPNG.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+    
+    <style>
+        body { font-family: sans-serif; padding: 20px; max-width: 900px; margin: 0 auto; line-height: 1.6; background-color: #f0f2f5; }
+        .container { display: flex; gap: 20px; align-items: flex-start; flex-wrap: wrap; }
+        .panel { background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); flex: 1; min-width: 350px; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; font-weight: bold; margin-bottom: 5px; color: #333; }
+        select, button { padding: 8px; font-size: 14px; width: 100%; box-sizing: border-box; }
+        
+        button { border: none; border-radius: 4px; cursor: pointer; font-weight: bold; margin-top: 10px; transition: opacity 0.2s; }
+        button:hover { opacity: 0.8; }
+        button:disabled { background-color: #ccc !important; cursor: not-allowed; }
+        .btn-add { background-color: #06C755; color: white; padding: 12px; font-size: 16px; }
+        .btn-zip { background-color: #111; color: white; padding: 12px; font-size: 16px; margin-top: 20px;}
+        
+        .msg { margin-top: 10px; font-weight: bold; font-size: 14px; }
+        .error { color: #d32f2f; }
+        .success { color: #388e3c; }
+
+        .drop-zone { border: 2px dashed #ccc; border-radius: 8px; padding: 30px 10px; text-align: center; background-color: #fafafa; cursor: pointer; transition: background 0.2s; margin-bottom: 10px; }
+        .drop-zone:hover, .drop-zone.dragover { background-color: #e6f7ff; border-color: #1890ff; }
+        
+        .first-frame-alert { background: #fff3cd; border-left: 4px solid #ffc107; padding: 10px 15px; border-radius: 4px; margin-bottom: 15px; display: none; align-items: center; gap: 15px; }
+        .first-frame-alert img { max-width: 64px; max-height: 64px; background: #fff; border: 1px solid #ccc; }
+        .first-frame-alert p { margin: 0; font-size: 12px; color: #856404; font-weight: bold; }
+        .first-frame-alert p span { display: block; font-size: 11px; font-weight: normal; margin-top: 4px; }
+
+        .frame-list { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 15px; }
+        .frame-item { position: relative; width: 60px; height: 60px; border: 1px solid #ddd; border-radius: 4px; background: #fff; cursor: grab; display: flex; align-items: center; justify-content: center; }
+        .frame-item img { max-width: 100%; max-height: 100%; object-fit: contain; }
+        .frame-item .frame-num { position: absolute; top: -6px; left: -6px; background: #333; color: #fff; font-size: 10px; border-radius: 50%; width: 18px; height: 18px; display: flex; align-items: center; justify-content: center; z-index: 2; }
+        .frame-item .frame-del { position: absolute; top: -6px; right: -6px; background: #ff4d4f; color: white; border: none; border-radius: 50%; width: 18px; height: 18px; font-size: 12px; line-height: 1; cursor: pointer; padding: 0; z-index: 2; display: flex; align-items: center; justify-content: center; margin:0; }
+        .sortable-ghost { opacity: 0.4; }
+
+        .preview-box { background: #e6f7ff; border: 1px solid #91d5ff; border-radius: 8px; padding: 15px; text-align: center; margin-bottom: 15px; display: none; }
+        .preview-box h4 { margin: 0 0 10px; color: #0050b3; font-size: 14px; }
+        .preview-box img { max-width: 100px; height: auto; border: 1px solid #ccc; background: #fff; }
+        .preview-box p { margin: 10px 0 0; font-size: 12px; color: #666; }
+
+        h2, h3 { margin-top: 0; border-bottom: 2px solid #eee; padding-bottom: 10px; font-size: 18px;}
+        .list-area { background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); width: 100%; margin-top: 20px; box-sizing: border-box; }
+        
+        /* ====== 追加・修正：売り場風グリッドレイアウト ====== */
+        .emoji-grid-container {
+            background: #ebebeb;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+            min-height: 120px;
+        }
+        .emoji-grid {
+            display: grid;
+            grid-template-columns: repeat(8, 1fr); /* 横に8個均等配置 */
+            gap: 10px; 
+            width: 100%;
+        }
+        .emoji-item { 
+            position: relative;
+            background: #fff;
+            border-radius: 6px; 
+            padding: 8px 5px; 
+            text-align: center; 
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            cursor: grab; /* ドラッグ可能を示す */
+            aspect-ratio: 1 / 1.1; /* やや縦長の四角形を維持 */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        .emoji-item:active { cursor: grabbing; }
+        .emoji-item img { max-width: 90%; max-height: 60%; display: block; margin: 0 auto; object-fit: contain; }
+        .emoji-item .filename { font-size: 10px; font-weight: bold; color: #666; margin-bottom: 5px; }
+        .emoji-item .btn-delete { 
+            position: absolute; 
+            top: -6px; 
+            right: -6px; 
+            background: #ff4d4f; 
+            color: white; 
+            border: none; 
+            border-radius: 50%; 
+            width: 20px; 
+            height: 20px; 
+            font-size: 12px; 
+            cursor: pointer; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            margin: 0; padding: 0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .tab-preview { margin-top: 10px; text-align: center; }
+        .tab-preview img { border: 1px solid #ccc; max-width: 96px; background: #eee; }
+    </style>
+</head>
+<body>
+
+    <h2>LINEアニメ絵文字 ジェネレーター (ZIP一括作成)</h2>
+    
+    <div class="container">
+        <!-- 左パネル：絵文字の作成と追加 -->
+        <div class="panel" style="flex: 1.5;">
+            <h3>🎨 1. アニメ絵文字を作る</h3>
+            <div id="dropZone" class="drop-zone">
+                📁 ここに画像をドラッグ＆ドロップ (5〜20枚)<br>
+                <span style="font-size:12px; color:#666;">またはクリックしてファイルを選択</span>
+                <input type="file" id="fileInput" multiple accept="image/png" style="display:none;">
+            </div>
+            <div id="frameValidationMsg" class="msg"></div>
+
+            <div id="firstFrameAlert" class="first-frame-alert">
+                <img id="firstFrameImg" src="">
+                <p>⚠️ 1フレーム目の確認
+                    <span>注意：この画像がトークルーム等で<b>静止画</b>として表示されます。<br>文字が読めるか、感情が伝わるか確認してください。</span>
+                </p>
+            </div>
+
+            <!-- フレーム一覧 -->
+            <div id="frameList" class="frame-list"></div>
+
+            <!-- 時間設定 -->
+            <div style="display:flex; gap:10px; margin-bottom: 15px;">
+                <div class="form-group" style="flex:1; margin-bottom: 0;">
+                    <label>1ループの再生時間</label>
+                    <select id="loopTimeInput">
+                        <option value="1">1秒</option>
+                        <option value="2">2秒</option>
+                        <option value="3">3秒</option>
+                        <option value="4">4秒</option>
+                    </select>
+                </div>
+                <div class="form-group" style="flex:1; margin-bottom: 0;">
+                    <label>ループ回数</label>
+                    <select id="loopCountInput">
+                        <option value="1">1回</option>
+                        <option value="2">2回</option>
+                        <option value="3">3回</option>
+                        <option value="4">4回</option>
+                    </select>
+                </div>
+            </div>
+
+            <div id="livePreviewBox" class="preview-box">
+                <h4>👀 動きのプレビュー</h4>
+                <img id="livePreviewImg" src="">
+                <p id="livePreviewInfo"></p>
+                <p style="font-size:11px; color:#999; margin-top:2px;">※動作確認のため、プレビューは無限ループで再生されます。</p>
+            </div>
+            
+            <button id="addBtn" class="btn-add" disabled>＋ 動きを確認してリストに追加</button>
+            <div id="addMsg" class="msg"></div>
+        </div>
+
+        <!-- 右パネル：タブ画像の設定 -->
+        <div class="panel">
+            <h3>📑 2. タブ画像 (tab.png) の設定</h3>
+            <p style="font-size:12px; color:#666;">※96×74pxの静止PNG画像が必要です。</p>
+            <div class="form-group">
+                <input type="file" id="tabInput" accept="image/png">
+            </div>
+            <div id="tabMsg" class="msg"></div>
+            <div class="tab-preview" id="tabPreviewArea" style="display:none;">
+                <p style="font-size:12px; margin:0 0 5px;">tab.png プレビュー</p>
+                <img id="tabPreviewImg" src="">
+            </div>
+        </div>
+    </div>
+
+    <!-- 下部パネル：リストとZIPダウンロード -->
+    <div class="list-area">
+        <h3>📦 3. 作成済み一覧 ＆ ダウンロード (<span id="countDisplay">0</span>/40個)</h3>
+        <p style="font-size:12px; color:#666; margin-top: -5px; margin-bottom: 10px;">
+            ※追加した絵文字はドラッグ＆ドロップで順番を入れ替えられます（ファイル名も自動で振り直されます）。横8個×縦5個のレイアウトで確認できます。
+        </p>
+        
+        <div class="emoji-grid-container">
+            <div id="emojiGrid" class="emoji-grid">
+                <!-- ここに絵文字が並びます -->
+                <p id="emptyMsg" style="grid-column: 1 / -1; color:#999; text-align:center; font-size:14px;">まだ追加されていません。</p>
+            </div>
+        </div>
+
+        <button id="downloadZipBtn" class="btn-zip" disabled>📥 すべてをZIPでダウンロード</button>
+        <div id="zipMsg" class="msg"></div>
+    </div>
+
+<script>
+    const apngList = []; 
+    let tabImageBlob = null;
+    let currentFrames = [];
+
+    const dropZone = document.getElementById('dropZone');
+    const fileInput = document.getElementById('fileInput');
+    const frameList = document.getElementById('frameList');
+    const frameValidationMsg = document.getElementById('frameValidationMsg');
+    const firstFrameAlert = document.getElementById('firstFrameAlert');
+    const firstFrameImg = document.getElementById('firstFrameImg');
+    const addBtn = document.getElementById('addBtn');
+    
+    // --- プレビュー用変数 ---
+    let previewInterval = null;
+    let currentPreviewIndex = 0;
+    const livePreviewBox = document.getElementById('livePreviewBox');
+    const livePreviewImg = document.getElementById('livePreviewImg');
+    const livePreviewInfo = document.getElementById('livePreviewInfo');
+
+    // ① フレーム作成側の並び替え
+    new Sortable(frameList, {
+        animation: 150,
+        ghostClass: 'sortable-ghost',
+        onEnd: () => {
+            const newOrderIds = Array.from(frameList.children).map(el => el.dataset.id);
+            currentFrames = newOrderIds.map(id => currentFrames.find(f => f.id === id));
+            updateFrameUI(); 
+        }
+    });
+
+    // ② 【追加】作成済みリスト（全体グリッド）の並び替え
+    const emojiGrid = document.getElementById('emojiGrid');
+    new Sortable(emojiGrid, {
+        animation: 150,
+        ghostClass: 'sortable-ghost',
+        onEnd: (evt) => {
+            // 要素が移動したら、内部のデータ配列 (apngList) も同じように入れ替える
+            const movedItem = apngList.splice(evt.oldIndex, 1)[0];
+            apngList.splice(evt.newIndex, 0, movedItem);
+            // 並び替えた結果を反映（ファイル名の再割り当てと描画）
+            renderGrid();
+        }
+    });
+
+    dropZone.addEventListener('click', () => fileInput.click());
+    dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('dragover'); });
+    dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+    dropZone.addEventListener('drop', (e) => { e.preventDefault(); dropZone.classList.remove('dragover'); handleFiles(e.dataTransfer.files); });
+    fileInput.addEventListener('change', (e) => handleFiles(e.target.files));
+
+    function handleFiles(files) {
+        const newFiles = Array.from(files).filter(f => f.type === 'image/png');
+        if (newFiles.length === 0) return;
+        newFiles.forEach(file => {
+            currentFrames.push({ id: 'frame_' + Math.random().toString(36).substr(2, 9), file: file, url: URL.createObjectURL(file) });
+        });
+        fileInput.value = "";
+        updateFrameUI();
+    }
+
+    document.getElementById('loopTimeInput').addEventListener('change', updateFrameUI);
+    document.getElementById('loopCountInput').addEventListener('change', updateFrameUI);
+
+    function updateFrameUI() {
+        frameList.innerHTML = '';
+        currentFrames.forEach((item, index) => {
+            const div = document.createElement('div');
+            div.className = 'frame-item'; div.dataset.id = item.id;
+            div.innerHTML = `<span class="frame-num">${index + 1}</span><img src="${item.url}" draggable="false"><button class="frame-del" onclick="removeFrame('${item.id}')" title="削除">×</button>`;
+            frameList.appendChild(div);
+        });
+
+        if (currentFrames.length > 0) {
+            firstFrameImg.src = currentFrames[0].url; firstFrameAlert.style.display = 'flex';
+        } else {
+            firstFrameAlert.style.display = 'none';
+        }
+
+        const len = currentFrames.length;
+        const loopTime = parseInt(document.getElementById('loopTimeInput').value, 10);
+        const loopCount = parseInt(document.getElementById('loopCountInput').value, 10);
+        let isValid = true;
+
+        if (len === 0) { frameValidationMsg.textContent = ''; isValid = false; } 
+        else if (len < 5) { frameValidationMsg.className = 'msg error'; frameValidationMsg.textContent = `❌ 最低5フレーム必要です。`; isValid = false; } 
+        else if (len > 20) { frameValidationMsg.className = 'msg error'; frameValidationMsg.textContent = `❌ 最大20フレームまでです。`; isValid = false; } 
+        else if (loopTime * loopCount > 4) { frameValidationMsg.className = 'msg error'; frameValidationMsg.textContent = `❌ 合計再生時間が4秒を超えています。`; isValid = false; } 
+        else { frameValidationMsg.className = 'msg success'; frameValidationMsg.textContent = `✅ ${len} 枚 / 合計再生時間 ${loopTime * loopCount}秒（OK）`; }
+
+        addBtn.disabled = !isValid;
+        startLivePreview();
+    }
+
+    function startLivePreview() {
+        clearInterval(previewInterval);
+        if (currentFrames.length === 0) { livePreviewBox.style.display = 'none'; return; }
+        livePreviewBox.style.display = 'block';
+        const loopTime = parseInt(document.getElementById('loopTimeInput').value, 10);
+        const delayMs = (loopTime * 1000) / currentFrames.length;
+        livePreviewInfo.textContent = `1フレームの表示時間: ${delayMs.toFixed(1)} ミリ秒`;
+        currentPreviewIndex = 0; livePreviewImg.src = currentFrames[currentPreviewIndex].url;
+        if (currentFrames.length > 1) {
+            previewInterval = setInterval(() => {
+                currentPreviewIndex = (currentPreviewIndex + 1) % currentFrames.length;
+                livePreviewImg.src = currentFrames[currentPreviewIndex].url;
+            }, delayMs);
+        }
+    }
+
+    window.removeFrame = (id) => {
+        const index = currentFrames.findIndex(f => f.id === id);
+        if (index > -1) { URL.revokeObjectURL(currentFrames[index].url); currentFrames.splice(index, 1); updateFrameUI(); }
+    }
+
+    const addMsg = document.getElementById('addMsg');
+    addBtn.addEventListener('click', async () => {
+        if (apngList.length >= 40) { addMsg.className = 'msg error'; addMsg.textContent = '❌ 追加できるのは最大40個までです。'; return; }
+        const loopTime = parseInt(document.getElementById('loopTimeInput').value, 10);
+        const loopCount = parseInt(document.getElementById('loopCountInput').value, 10);
+        addMsg.className = 'msg'; addMsg.textContent = '生成中...'; addBtn.disabled = true;
+
+        try {
+            const filesToProcess = currentFrames.map(f => f.file);
+            const loadImg = (file) => new Promise((resolve, reject) => {
+                const img = new Image(); img.onload = () => resolve(img); img.onerror = () => reject(new Error('失敗')); img.src = URL.createObjectURL(file);
+            });
+            const images = await Promise.all(filesToProcess.map(loadImg));
+            const w = images[0].width; const h = images[0].height;
+            const canvas = document.createElement('canvas'); canvas.width = w; canvas.height = h; const ctx = canvas.getContext('2d');
+            const framesRgba = images.map(img => { ctx.clearRect(0, 0, w, h); ctx.drawImage(img, 0, 0, w, h); return ctx.getImageData(0, 0, w, h).data.buffer; });
+            const delayMs = (loopTime * 1000) / framesRgba.length;
+            const delays = Array(framesRgba.length).fill(delayMs);
+            let apngBuffer = UPNG.encode(framesRgba, w, h, 0, delays);
+            apngBuffer = setApngLoopCount(apngBuffer, loopCount);
+
+            const blob = new Blob([apngBuffer], { type: 'image/png' });
+            apngList.push({ blob, previewUrl: URL.createObjectURL(blob) });
+
+            renderGrid();
+            addMsg.className = 'msg success'; addMsg.textContent = '✅ リストに追加しました！';
+            
+            currentFrames.forEach(f => URL.revokeObjectURL(f.url)); currentFrames = []; updateFrameUI();
+            images.forEach(img => URL.revokeObjectURL(img.src));
+        } catch (error) { addMsg.className = 'msg error'; addMsg.textContent = '❌ エラーが発生しました'; addBtn.disabled = false; }
+    });
+
+    // ==========================================
+    // リストの描画（売り場風グリッドの更新）
+    // ==========================================
+    function renderGrid() {
+        const countDisplay = document.getElementById('countDisplay');
+        countDisplay.textContent = apngList.length;
+        emojiGrid.innerHTML = ''; // 一旦クリア
+
+        if (apngList.length === 0) {
+            emojiGrid.innerHTML = '<p id="emptyMsg" style="grid-column: 1 / -1; color:#999; text-align:center; font-size:14px; margin-top:40px;">まだ追加されていません。</p>';
+        } else {
+            apngList.forEach((item, index) => {
+                // 並んでいる順番に合わせてファイル名を 001.png から再割り当て
+                const fileName = String(index + 1).padStart(3, '0') + '.png';
+                const div = document.createElement('div');
+                div.className = 'emoji-item';
+                div.innerHTML = `
+                    <div class="filename">${fileName}</div>
+                    <img src="${item.previewUrl}" alt="${fileName}" draggable="false">
+                    <button class="btn-delete" onclick="removeApngItem(${index})" title="削除">×</button>
+                `;
+                emojiGrid.appendChild(div);
+            });
+        }
+        checkDownloadReady();
+    }
+
+    window.removeApngItem = (index) => {
+        URL.revokeObjectURL(apngList[index].previewUrl); apngList.splice(index, 1); renderGrid();
+    }
+
+    // --- タブ画像・ZIP処理・バイナリ処理（変更なし） ---
+    const tabInput = document.getElementById('tabInput');
+    const tabMsg = document.getElementById('tabMsg');
+    const tabPreviewArea = document.getElementById('tabPreviewArea');
+    const tabPreviewImg = document.getElementById('tabPreviewImg');
+    const downloadZipBtn = document.getElementById('downloadZipBtn');
+
+    tabInput.addEventListener('change', async (e) => {
+        const file = e.target.files[0]; if (!file) return;
+        tabMsg.className = 'msg'; tabMsg.textContent = 'チェック中...';
+        try {
+            const img = new Image(); const url = URL.createObjectURL(file);
+            await new Promise((resolve, reject) => { img.onload = resolve; img.onerror = reject; img.src = url; });
+            if (img.width !== 96 || img.height !== 74) throw new Error(`サイズが違います（必要: 96x74px）`);
+            tabImageBlob = file; tabPreviewImg.src = url; tabPreviewArea.style.display = 'block';
+            tabMsg.className = 'msg success'; tabMsg.textContent = '✅ 設定しました'; checkDownloadReady();
+        } catch (error) {
+            tabInput.value = ""; tabImageBlob = null; tabPreviewArea.style.display = 'none';
+            tabMsg.className = 'msg error'; tabMsg.textContent = '❌ ' + error.message; checkDownloadReady();
+        }
+    });
+
+    function checkDownloadReady() { downloadZipBtn.disabled = !(apngList.length > 0 && tabImageBlob); }
+
+    downloadZipBtn.addEventListener('click', async () => {
+        const zipMsg = document.getElementById('zipMsg'); zipMsg.className = 'msg'; zipMsg.textContent = 'ZIPを作成中...'; downloadZipBtn.disabled = true;
+        try {
+            const zip = new JSZip();
+            apngList.forEach((item, index) => zip.file(String(index + 1).padStart(3, '0') + '.png', item.blob));
+            zip.file('tab.png', tabImageBlob);
+            const zipBlob = await zip.generateAsync({ type: "blob" }); const zipUrl = URL.createObjectURL(zipBlob);
+            const a = document.createElement('a'); a.href = zipUrl; a.download = 'line_emoji_pack.zip'; a.click();
+            setTimeout(() => URL.revokeObjectURL(zipUrl), 1000); zipMsg.className = 'msg success'; zipMsg.textContent = '✅ ダウンロード完了！';
+        } catch (error) { zipMsg.className = 'msg error'; zipMsg.textContent = '❌ エラー: ' + error.message; } finally { downloadZipBtn.disabled = false; }
+    });
+
+    function setApngLoopCount(buffer, loopCount) {
+        const bytes = new Uint8Array(buffer);
+        for (let i = 0; i < bytes.length - 12; i++) {
+            if (bytes[i] === 97 && bytes[i+1] === 99 && bytes[i+2] === 84 && bytes[i+3] === 76) {
+                bytes[i+8] = (loopCount >>> 24) & 255; bytes[i+9] = (loopCount >>> 16) & 255; bytes[i+10] = (loopCount >>> 8) & 255; bytes[i+11] = loopCount & 255;
+                const crc = crc32(bytes, i, 12); bytes[i+12] = (crc >>> 24) & 255; bytes[i+13] = (crc >>> 16) & 255; bytes[i+14] = (crc >>> 8) & 255; bytes[i+15] = crc & 255; break;
+            }
+        } return buffer;
+    }
+    const crcTable = (function(){ let c, table = []; for(let n = 0; n < 256; n++){ c = n; for(let k = 0; k < 8; k++){ c = ((c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1)); } table[n] = c; } return table; })();
+    function crc32(buf, offset, length) { let crc = 0 ^ (-1); for (let i = offset; i < offset + length; i++) { crc = (crc >>> 8) ^ crcTable[(crc ^ buf[i]) & 0xFF]; } return (crc ^ (-1)) >>> 0; }
+</script>
+</body>
+</html>
