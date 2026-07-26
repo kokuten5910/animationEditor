@@ -58,7 +58,6 @@
         
         .emoji-grid-container { background: #ebebeb; padding: 15px; border-radius: 8px; margin-top: 15px; min-height: 120px; }
         
-        /* 売り場グリッド（横8×縦5） */
         .emoji-grid { display: grid; grid-template-columns: repeat(8, 1fr); gap: 10px; width: 100%; }
         .emoji-item { position: relative; background: #fff; border-radius: 6px; padding: 8px 5px; text-align: center; box-shadow: 0 1px 3px rgba(0,0,0,0.1); cursor: grab; aspect-ratio: 1 / 1.1; display: flex; flex-direction: column; align-items: center; justify-content: center; }
         .emoji-item:active { cursor: grabbing; }
@@ -162,7 +161,6 @@
         
         <div class="emoji-grid-container">
             <div id="emojiGrid" class="emoji-grid">
-                <!-- ここに絵文字が並びます -->
                 <p id="emptyMsg" style="grid-column: 1 / -1; color:#999; text-align:center; font-size:14px; margin-top:40px;">まだ追加されていません。</p>
             </div>
         </div>
@@ -192,7 +190,6 @@
     const livePreviewImg = document.getElementById('livePreviewImg');
     const livePreviewInfo = document.getElementById('livePreviewInfo');
 
-    // SortableJS設定：ボタンのクリックを阻害しないようにフィルターを設定
     new Sortable(frameList, {
         animation: 150,
         ghostClass: 'sortable-ghost',
@@ -240,7 +237,11 @@
         const newFiles = Array.from(files).filter(f => f.type.startsWith('image/'));
         if (newFiles.length === 0) return;
         newFiles.forEach(file => {
-            currentFrames.push({ id: 'frame_' + Math.random().toString(36).substr(2, 9), file: file, url: URL.createObjectURL(file) });
+            currentFrames.push({ 
+                id: 'frame_' + Math.random().toString(36).substr(2, 9), 
+                file: file, 
+                url: URL.createObjectURL(file) 
+            });
         });
         fileInput.value = "";
         updateFrameUI();
@@ -304,6 +305,7 @@
         const index = currentFrames.findIndex(f => f.id === id);
         if (index > -1) {
             const original = currentFrames[index];
+            if (!original || !original.file) return;
             const newFrame = { 
                 id: 'frame_' + Math.random().toString(36).substr(2, 9), 
                 file: original.file, 
@@ -331,7 +333,6 @@
         addMsg.className = 'msg'; addMsg.textContent = '生成中...'; addBtn.disabled = true;
 
         try {
-            // スマホでの高解像度画像によるメモリ不足を防ぐため、読み込み時に180x180へ効率よく変換
             const processFrames = async () => {
                 const canvas = document.createElement('canvas');
                 canvas.width = 180;
@@ -343,11 +344,13 @@
 
                 for (let i = 0; i < currentFrames.length; i++) {
                     const file = currentFrames[i].file;
+                    if (!file) throw new Error(`フレーム ${i + 1} のファイルデータが見つかりません`);
+
                     const img = await new Promise((resolve, reject) => {
                         const image = new Image();
                         const objUrl = URL.createObjectURL(file);
                         image.onload = () => { URL.revokeObjectURL(objUrl); resolve(image); };
-                        image.onerror = () => { URL.revokeObjectURL(objUrl); reject(new Error('画像の読み込みに失敗しました')); };
+                        image.onerror = () => { URL.revokeObjectURL(objUrl); reject(new Error(`フレーム ${i + 1} の画像読み込みに失敗しました`)); };
                         image.src = objUrl;
                     });
 
@@ -393,7 +396,7 @@
             updateFrameUI();
         } catch (error) { 
             addMsg.className = 'msg error'; 
-            addMsg.textContent = '❌ エラーが発生しました: ' + error.message; 
+            addMsg.textContent = '❌ ' + error.message; 
             addBtn.disabled = false; 
         }
     });
