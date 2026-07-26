@@ -30,7 +30,6 @@
         .error { color: #d32f2f; }
         .success { color: #388e3c; }
 
-        /* labelに変更したドロップゾーン（スマホ対応） */
         .drop-zone { display: block; border: 2px dashed #ccc; border-radius: 8px; padding: 30px 10px; text-align: center; background-color: #fafafa; cursor: pointer; transition: background 0.2s; margin-bottom: 10px; }
         .drop-zone:hover, .drop-zone.dragover { background-color: #e6f7ff; border-color: #1890ff; }
         
@@ -41,11 +40,11 @@
 
         .frame-list { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 15px; }
         .frame-item { position: relative; width: 60px; height: 60px; border: 1px solid #ddd; border-radius: 4px; background: #fff; cursor: grab; display: flex; align-items: center; justify-content: center; }
-        .frame-item img { max-width: 100%; max-height: 100%; object-fit: contain; }
-        .frame-item .frame-num { position: absolute; top: -6px; left: -6px; background: #333; color: #fff; font-size: 10px; border-radius: 50%; width: 18px; height: 18px; display: flex; align-items: center; justify-content: center; z-index: 2; }
+        .frame-item img { max-width: 100%; max-height: 100%; object-fit: contain; pointer-events: none; }
+        .frame-item .frame-num { position: absolute; top: -6px; left: -6px; background: #333; color: #fff; font-size: 10px; border-radius: 50%; width: 18px; height: 18px; display: flex; align-items: center; justify-content: center; z-index: 2; pointer-events: none; }
         
-        .frame-item .frame-del { position: absolute; top: -6px; right: -6px; background: #ff4d4f; color: white; border: none; border-radius: 50%; width: 20px; height: 20px; font-size: 12px; line-height: 1; cursor: pointer; padding: 0; z-index: 2; display: flex; align-items: center; justify-content: center; margin:0; box-shadow: 0 1px 3px rgba(0,0,0,0.2); }
-        .frame-item .frame-copy { position: absolute; bottom: -6px; right: -6px; background: #1890ff; color: white; border: none; border-radius: 50%; width: 20px; height: 20px; font-size: 14px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; margin: 0; padding: 0; z-index: 2; box-shadow: 0 1px 3px rgba(0,0,0,0.2); }
+        .frame-item .frame-del { position: absolute; top: -6px; right: -6px; background: #ff4d4f; color: white; border: none; border-radius: 50%; width: 22px; height: 22px; font-size: 14px; line-height: 1; cursor: pointer; padding: 0; z-index: 10; display: flex; align-items: center; justify-content: center; margin:0; box-shadow: 0 1px 3px rgba(0,0,0,0.3); }
+        .frame-item .frame-copy { position: absolute; bottom: -6px; right: -6px; background: #1890ff; color: white; border: none; border-radius: 50%; width: 22px; height: 22px; font-size: 14px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; margin: 0; padding: 0; z-index: 10; box-shadow: 0 1px 3px rgba(0,0,0,0.3); }
 
         .sortable-ghost { opacity: 0.4; }
 
@@ -63,14 +62,13 @@
         .emoji-grid { display: grid; grid-template-columns: repeat(8, 1fr); gap: 10px; width: 100%; }
         .emoji-item { position: relative; background: #fff; border-radius: 6px; padding: 8px 5px; text-align: center; box-shadow: 0 1px 3px rgba(0,0,0,0.1); cursor: grab; aspect-ratio: 1 / 1.1; display: flex; flex-direction: column; align-items: center; justify-content: center; }
         .emoji-item:active { cursor: grabbing; }
-        .emoji-item img { max-width: 90%; max-height: 60%; display: block; margin: 0 auto; object-fit: contain; }
+        .emoji-item img { max-width: 90%; max-height: 60%; display: block; margin: 0 auto; object-fit: contain; pointer-events: none; }
         .emoji-item .filename { font-size: 10px; font-weight: bold; color: #666; margin-bottom: 5px; }
-        .emoji-item .btn-delete { position: absolute; top: -6px; right: -6px; background: #ff4d4f; color: white; border: none; border-radius: 50%; width: 20px; height: 20px; font-size: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center; margin: 0; padding: 0; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
+        .emoji-item .btn-delete { position: absolute; top: -6px; right: -6px; background: #ff4d4f; color: white; border: none; border-radius: 50%; width: 22px; height: 22px; font-size: 14px; cursor: pointer; display: flex; align-items: center; justify-content: center; margin: 0; padding: 0; z-index: 10; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
 
         .tab-preview { margin-top: 10px; text-align: center; }
         .tab-preview img { border: 1px solid #ccc; max-width: 96px; background: #eee; }
 
-        /* スマホ向けのレスポンス調整（横8列が潰れないようにスクロールまたは縮小） */
         @media (max-width: 768px) {
             .emoji-grid { min-width: 500px; }
             .emoji-grid-container { overflow-x: auto; }
@@ -85,7 +83,6 @@
         <!-- 左パネル：絵文字の作成と追加 -->
         <div class="panel" style="flex: 1.5;">
             <h3>🎨 1. アニメ絵文字を作る</h3>
-            <!-- labelタグにすることでスマホでも確実にファイル選択が反応するように変更 -->
             <label for="fileInput" id="dropZone" class="drop-zone">
                 📁 ここに画像をドラッグ＆ドロップ (5〜20枚)<br>
                 <span style="font-size:12px; color:#666;">またはタップしてファイルを選択</span><br>
@@ -195,9 +192,12 @@
     const livePreviewImg = document.getElementById('livePreviewImg');
     const livePreviewInfo = document.getElementById('livePreviewInfo');
 
+    // SortableJS設定：ボタンのクリックを阻害しないようにフィルターを設定
     new Sortable(frameList, {
         animation: 150,
         ghostClass: 'sortable-ghost',
+        filter: '.frame-del, .frame-copy',
+        preventOnFilter: false,
         onEnd: () => {
             const newOrderIds = Array.from(frameList.children).map(el => el.dataset.id);
             currentFrames = newOrderIds.map(id => currentFrames.find(f => f.id === id));
@@ -209,6 +209,8 @@
     new Sortable(emojiGrid, {
         animation: 150,
         ghostClass: 'sortable-ghost',
+        filter: '.btn-delete',
+        preventOnFilter: false,
         onEnd: (evt) => {
             const movedItem = apngList.splice(evt.oldIndex, 1)[0];
             apngList.splice(evt.newIndex, 0, movedItem);
@@ -228,12 +230,10 @@
         renderGrid();
     });
 
-    // ドラッグ＆ドロップ用イベント（PC用）
     dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('dragover'); });
     dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
     dropZone.addEventListener('drop', (e) => { e.preventDefault(); dropZone.classList.remove('dragover'); handleFiles(e.dataTransfer.files); });
     
-    // ファイル選択時
     fileInput.addEventListener('change', (e) => handleFiles(e.target.files));
 
     function handleFiles(files) {
@@ -257,8 +257,8 @@
             div.innerHTML = `
                 <span class="frame-num">${index + 1}</span>
                 <img src="${item.url}" draggable="false">
-                <button class="frame-del" onclick="removeFrame('${item.id}')" title="削除">×</button>
-                <button class="frame-copy" onclick="copyFrame('${item.id}')" title="このコマを複製">＋</button>
+                <button type="button" class="frame-del" onclick="removeFrame('${item.id}')" title="削除">×</button>
+                <button type="button" class="frame-copy" onclick="copyFrame('${item.id}')" title="このコマを複製">＋</button>
             `;
             frameList.appendChild(div);
         });
@@ -316,7 +316,11 @@
 
     window.removeFrame = (id) => {
         const index = currentFrames.findIndex(f => f.id === id);
-        if (index > -1) { URL.revokeObjectURL(currentFrames[index].url); currentFrames.splice(index, 1); updateFrameUI(); }
+        if (index > -1) { 
+            URL.revokeObjectURL(currentFrames[index].url); 
+            currentFrames.splice(index, 1); 
+            updateFrameUI(); 
+        }
     }
 
     const addMsg = document.getElementById('addMsg');
@@ -327,33 +331,44 @@
         addMsg.className = 'msg'; addMsg.textContent = '生成中...'; addBtn.disabled = true;
 
         try {
-            const filesToProcess = currentFrames.map(f => f.file);
-            const loadImg = (file) => new Promise((resolve, reject) => {
-                const img = new Image(); img.onload = () => resolve(img); img.onerror = () => reject(new Error('失敗')); img.src = URL.createObjectURL(file);
-            });
-            const images = await Promise.all(filesToProcess.map(loadImg));
-            
-            const w = 180; 
-            const h = 180;
-            const canvas = document.createElement('canvas'); 
-            canvas.width = w; 
-            canvas.height = h; 
-            const ctx = canvas.getContext('2d');
-            
-            let staticUrl = "";
-            const framesRgba = images.map((img, index) => { 
-                ctx.clearRect(0, 0, w, h); 
-                ctx.drawImage(img, 0, 0, w, h); 
-                if (index === 0) {
-                    staticUrl = canvas.toDataURL('image/png');
+            // スマホでの高解像度画像によるメモリ不足を防ぐため、読み込み時に180x180へ効率よく変換
+            const processFrames = async () => {
+                const canvas = document.createElement('canvas');
+                canvas.width = 180;
+                canvas.height = 180;
+                const ctx = canvas.getContext('2d');
+                
+                const framesRgba = [];
+                let staticUrl = "";
+
+                for (let i = 0; i < currentFrames.length; i++) {
+                    const file = currentFrames[i].file;
+                    const img = await new Promise((resolve, reject) => {
+                        const image = new Image();
+                        const objUrl = URL.createObjectURL(file);
+                        image.onload = () => { URL.revokeObjectURL(objUrl); resolve(image); };
+                        image.onerror = () => { URL.revokeObjectURL(objUrl); reject(new Error('画像の読み込みに失敗しました')); };
+                        image.src = objUrl;
+                    });
+
+                    ctx.clearRect(0, 0, 180, 180);
+                    ctx.drawImage(img, 0, 0, 180, 180);
+                    
+                    if (i === 0) {
+                        staticUrl = canvas.toDataURL('image/png');
+                    }
+                    
+                    framesRgba.push(ctx.getImageData(0, 0, 180, 180).data.buffer);
                 }
-                return ctx.getImageData(0, 0, w, h).data.buffer; 
-            });
+                return { framesRgba, staticUrl };
+            };
+
+            const { framesRgba, staticUrl } = await processFrames();
             
             const delayMs = (loopTime * 1000) / framesRgba.length;
             const delays = Array(framesRgba.length).fill(delayMs);
             
-            let baseApngBuffer = UPNG.encode(framesRgba, w, h, 0, delays);
+            let baseApngBuffer = UPNG.encode(framesRgba, 180, 180, 0, delays);
             
             let previewBuffer = baseApngBuffer.slice(0);
             previewBuffer = setApngLoopCount(previewBuffer, 0);
@@ -373,9 +388,14 @@
             renderGrid();
             addMsg.className = 'msg success'; addMsg.textContent = '✅ リストに追加しました！';
             
-            currentFrames.forEach(f => URL.revokeObjectURL(f.url)); currentFrames = []; updateFrameUI();
-            images.forEach(img => URL.revokeObjectURL(img.src));
-        } catch (error) { addMsg.className = 'msg error'; addMsg.textContent = '❌ エラーが発生しました'; addBtn.disabled = false; }
+            currentFrames.forEach(f => URL.revokeObjectURL(f.url)); 
+            currentFrames = []; 
+            updateFrameUI();
+        } catch (error) { 
+            addMsg.className = 'msg error'; 
+            addMsg.textContent = '❌ エラーが発生しました: ' + error.message; 
+            addBtn.disabled = false; 
+        }
     });
 
     function renderGrid() {
@@ -396,7 +416,7 @@
                 div.innerHTML = `
                     <div class="filename">${fileName}</div>
                     <img src="${displaySrc}" alt="${fileName}" draggable="false">
-                    <button class="btn-delete" onclick="removeApngItem(${index})" title="削除">×</button>
+                    <button type="button" class="btn-delete" onclick="removeApngItem(${index})" title="削除">×</button>
                 `;
                 emojiGrid.appendChild(div);
             });
@@ -405,7 +425,9 @@
     }
 
     window.removeApngItem = (index) => {
-        URL.revokeObjectURL(apngList[index].previewUrl); apngList.splice(index, 1); renderGrid();
+        URL.revokeObjectURL(apngList[index].previewUrl); 
+        apngList.splice(index, 1); 
+        renderGrid();
     }
 
     const tabInput = document.getElementById('tabInput');
